@@ -1,5 +1,5 @@
-const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_PUBLIC_KEY_HERE";
+const SUPABASE_URL = "https://yprgxbgyqiuglkaafbht.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_PtzFWt0c3DyCyG1ctOMYcw_HAejnwbb";
 
 (function () {
   const configured = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 40;
