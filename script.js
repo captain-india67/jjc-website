@@ -97,6 +97,11 @@
     }
     requestAnimationFrame(step);
   }
+  var SITE0 = window.JJC_SITE || {};
+  document.querySelectorAll('[data-count-site]').forEach(function (el) {
+    var k = el.getAttribute('data-count-site');
+    if (SITE0[k] != null) el.setAttribute('data-count', SITE0[k]);
+  });
   var counters = document.querySelectorAll('[data-count]');
   if (counters.length && 'IntersectionObserver' in window) {
     var co = new IntersectionObserver(function (entries) {
@@ -170,16 +175,27 @@
     var venueText = function (e) {
       return e.venue ? escapeHtml(e.venue) : '<span class="event-tbc">Venue TBC</span>';
     };
+    var eventKey = function (e) { return e.date + ' ' + e.title; };
+    var eventLabel = function (e) {
+      var d = parseDate(e.date);
+      return e.title + ', ' + DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+    };
     var card = function (e) {
       var d = parseDate(e.date);
+      var past = isPast(e);
       var title = escapeHtml(e.title);
       if (e.link) title = '<a href="' + escapeHtml(e.link) + '">' + title + '</a>';
-      return '<article class="event-card' + (isPast(e) ? ' past' : '') + '">' +
-        '<div class="event-date"><span class="dow">' + DAYS[d.getDay()] + '</span><span class="day">' + d.getDate() + '</span><span class="month">' + MONTHS[d.getMonth()] + '</span></div>' +
-        '<div class="event-body"><span class="event-committee">' + escapeHtml(e.committee) + (isPast(e) ? ' &middot; Done' : '') + '</span>' +
+      var dateBlock = '<div class="event-date"><span class="dow">' + DAYS[d.getDay()] + '</span><span class="day">' + d.getDate() + '</span><span class="month">' + MONTHS[d.getMonth()] + '</span></div>';
+      var photo = e.image ? '<div class="event-photo"><img src="' + escapeHtml(e.image) + '" alt="" loading="lazy">' + dateBlock + '</div>' : dateBlock;
+      var action = '';
+      if (e.signup && !past) {
+        action = '<a class="btn-link event-signup" href="events.html?event=' + encodeURIComponent(eventKey(e)) + '#signup" data-signup-for="' + escapeHtml(eventKey(e)) + '">Sign up <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>';
+      }
+      return '<article class="event-card' + (past ? ' past' : '') + (e.image ? ' has-photo' : '') + '">' + photo +
+        '<div class="event-body"><span class="event-committee">' + escapeHtml(e.committee) + (past ? ' &middot; Done' : '') + '</span>' +
         '<h3>' + title + '</h3>' +
         '<div class="event-meta"><span>' + timeText(e) + '</span><span>' + venueText(e) + '</span></div>' +
-        '</div></article>';
+        action + '</div></article>';
     };
     document.querySelectorAll('[data-events]').forEach(function (host) {
       var mode = host.getAttribute('data-events');
@@ -205,30 +221,85 @@
     });
   }
 
-  var contactForm = document.querySelector('#contact-form');
-  if (contactForm) {
-    var ok = contactForm.querySelector('.form-success');
-    var err = contactForm.querySelector('.form-error');
-    var button = contactForm.querySelector('button[type="submit"]');
-    contactForm.addEventListener('submit', function (e) {
+  var signupSelects = document.querySelectorAll('select[data-signup-events]');
+  if (signupSelects.length && EVENTS.length) {
+    var MONTHS2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var DAYS2 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var parse2 = function (d) { var p = d.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
+    var now2 = new Date();
+    var today2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate());
+    var open = EVENTS.filter(function (e) { return e.signup && parse2(e.date) >= today2; })
+      .sort(function (a, b) { return (a.date + (a.start || '99:99')).localeCompare(b.date + (b.start || '99:99')); });
+    var wanted = '';
+    try { wanted = new URLSearchParams(window.location.search).get('event') || ''; } catch (err) { wanted = ''; }
+    signupSelects.forEach(function (sel) {
+      var only = sel.getAttribute('data-signup-events');
+      var list = only ? open.filter(function (e) { return e.committee === only; }) : open;
+      var def = sel.getAttribute('data-default-event') || '';
+      sel.innerHTML = '<option value="">Choose an event</option>' + list.map(function (e) {
+        var d = parse2(e.date);
+        var key = e.date + ' ' + e.title;
+        var label = e.title + ', ' + DAYS2[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS2[d.getMonth()];
+        var selected = (wanted && wanted === key) || (!wanted && def && e.title === def) ? ' selected' : '';
+        return '<option value="' + escapeHtml(label) + '" data-key="' + escapeHtml(key) + '"' + selected + '>' + escapeHtml(label) + '</option>';
+      }).join('');
+      if (!list.length) {
+        var form = sel.closest('form');
+        var section = form && form.closest('[data-signup-section]');
+        if (section) section.style.display = 'none';
+      }
+    });
+    document.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-signup-for]');
+      if (!a) return;
+      var sel = document.querySelector('select[data-signup-events]');
+      var target = document.querySelector('#signup');
+      if (!sel || !target) return;
+      ev.preventDefault();
+      var key = a.getAttribute('data-signup-for');
+      Array.prototype.forEach.call(sel.options, function (o) { if (o.getAttribute('data-key') === key) sel.value = o.value; });
+      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    });
+    if (wanted && window.location.hash === '#signup') {
+      var t = document.querySelector('#signup');
+      if (t) setTimeout(function () { t.scrollIntoView({ behavior: 'auto', block: 'start' }); }, 50);
+    }
+  }
+
+  document.querySelectorAll('form[data-netlify]').forEach(function (form) {
+    var ok = form.querySelector('.form-success');
+    var err = form.querySelector('.form-error');
+    var button = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!contactForm.checkValidity()) { contactForm.reportValidity(); return; }
+      if (!form.checkValidity()) { form.reportValidity(); return; }
       if (ok) ok.classList.remove('visible');
       if (err) err.classList.remove('visible');
-      button.disabled = true;
-      var body = new URLSearchParams(new FormData(contactForm)).toString();
+      if (button) button.disabled = true;
+      var body = new URLSearchParams(new FormData(form)).toString();
       fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
         .then(function (res) {
           if (!res.ok) throw new Error('status ' + res.status);
           if (ok) { ok.classList.add('visible'); ok.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-          contactForm.reset();
+          form.reset();
         })
         .catch(function () {
           if (err) { err.classList.add('visible'); err.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         })
-        .then(function () { button.disabled = false; });
+        .then(function () { if (button) button.disabled = false; });
     });
-  }
+  });
+
+  var SITE = window.JJC_SITE || {};
+  document.querySelectorAll('[data-site]').forEach(function (el) {
+    var k = el.getAttribute('data-site');
+    if (SITE[k] != null) el.textContent = SITE[k];
+  });
+  document.querySelectorAll('[data-site-href]').forEach(function (el) {
+    var k = el.getAttribute('data-site-href');
+    if (!SITE[k]) return;
+    el.setAttribute('href', k === 'email' ? 'mailto:' + SITE[k] : SITE[k]);
+  });
 
   document.querySelectorAll('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });
 })();
