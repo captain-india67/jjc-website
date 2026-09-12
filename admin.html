@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="JJC admin dashboard for reviewing service hours.">
+<meta name="theme-color" content="#0A1F44">
+<meta name="robots" content="noindex">
+<title>Admin - Johannesburg Junior Council</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+.admin-gate{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}
+.admin-tabs{display:flex;gap:6px;border-bottom:1px solid var(--rule);margin-bottom:36px;flex-wrap:wrap}
+.admin-tab{padding:12px 20px;font-family:'JetBrains Mono',monospace;font-size:0.74rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mute);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:0;border-left:0;border-right:0;cursor:pointer}
+.admin-tab.active{color:var(--gold-deep);border-bottom-color:var(--gold)}
+.admin-tab .count{display:inline-block;margin-left:7px;min-width:20px;padding:1px 7px;border-radius:999px;background:var(--gold);color:var(--navy);font-size:0.66rem;font-weight:700}
+.admin-panel{display:none}
+.admin-panel.active{display:block}
+.admin-bar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+.admin-bar p{font-size:0.9rem;color:var(--ink-mute);margin:0}
+.review-card{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;padding:22px 0;border-bottom:1px solid var(--rule)}
+.review-card:first-child{border-top:1px solid var(--rule)}
+.review-who{font-family:'Fraunces',serif;font-weight:500;font-size:1.15rem;color:var(--ink)}
+.review-meta{font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);margin:4px 0 10px}
+.review-detail{font-size:0.94rem;color:var(--ink-soft)}
+.review-detail strong{font-family:'Fraunces',serif;font-style:italic;font-variation-settings:"SOFT" 100,"WONK" 1;font-size:1.15rem;color:var(--gold-deep);margin-right:8px;font-weight:500}
+.review-reflection{font-style:italic;color:var(--ink-mute);font-size:0.9rem;margin-top:8px;max-width:50em}
+.review-actions{display:flex;gap:8px;flex-shrink:0}
+.review-actions button{border:0;border-radius:999px;padding:10px 18px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-weight:600}
+.btn-approve{background:var(--navy);color:var(--gold)}
+.btn-approve:hover{background:var(--gold);color:var(--navy)}
+.btn-reject{background:transparent;color:#C0392B;border:1px solid #E5B4B4 !important}
+.btn-reject:hover{background:#FBEAEA}
+.roster{width:100%;border-collapse:collapse;font-size:0.92rem}
+.roster th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-mute);padding:12px 10px;border-bottom:1px solid var(--rule-strong)}
+.roster td{padding:14px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+.roster .nm{font-family:'Fraunces',serif;font-weight:500;font-size:1.02rem}
+.empty-state{padding:60px 24px;text-align:center;color:var(--ink-mute);border:1px dashed var(--rule-strong);border-radius:var(--radius);font-size:0.94rem}
+.empty-state .empty-icon{font-family:'Fraunces',serif;font-style:italic;font-variation-settings:"SOFT" 100,"WONK" 1;font-size:2rem;color:var(--gold);display:block;margin-bottom:8px;line-height:1}
+.auth-error{display:none;background:#FBEAEA;border:1px solid #E5B4B4;color:#8A1F1F;border-radius:var(--radius);padding:14px 18px;font-size:0.9rem;margin:0 0 32px}
+.auth-error.visible{display:block}
+@media (max-width:720px){.review-card{grid-template-columns:1fr}.hide-sm{display:none}}
+</style>
+</head>
+<body>
+<div class="scroll-progress" aria-hidden="true"></div>
+<header class="site-header solid"><div class="container"><nav class="nav" aria-label="Primary">
+<a href="index.html" class="logo"><span class="logo-mark">J</span><span class="logo-text">Johannesburg Junior Council<small>EST. 1926</small></span></a>
+<button class="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="site-menu"><span>Menu</span><span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+<ul class="nav-links" id="primary-menu">
+<li><a href="index.html">Home</a></li>
+<li><a href="about.html">Story</a></li>
+<li><a href="committees.html">Committees</a></li>
+<li><a href="schools.html">Schools</a></li>
+<li><a href="centenary.html">Centenary</a></li>
+<li><a href="events.html">Events</a></li>
+<li><a href="contact.html">Contact</a></li>
+<li><a href="log-hours.html" class="hours-counter active"><span>Log hours</span></a></li>
+</ul></nav></div></header>
+<div class="nav-overlay" id="site-menu" role="dialog" aria-modal="true" aria-label="Site menu">
+<p class="menu-label">Menu</p>
+<ul>
+<li><a href="index.html" class="menu-link">Home</a></li>
+<li><a href="about.html" class="menu-link">Story</a></li>
+<li><a href="committees.html" class="menu-link">Committees</a></li>
+<li><a href="schools.html" class="menu-link">Schools</a></li>
+<li><a href="centenary.html" class="menu-link">Centenary</a></li>
+<li><a href="events.html" class="menu-link">Events</a></li>
+<li><a href="contact.html" class="menu-link">Contact</a></li>
+<li><a href="log-hours.html" class="menu-link active">Log hours</a></li>
+</ul>
+<div class="menu-foot">
+<a href="log-hours.html" class="btn btn-primary">Log service hours <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+<div class="sa-ribbon" aria-hidden="true"></div>
+<p>Johannesburg Junior Council &middot; 1926&ndash;2026</p>
+</div>
+</div>
+
+<main>
+<section class="page-header"><div class="container">
+<span class="tag outline-light"><span class="dot"></span>Admin</span>
+<h1>Review <em>hours.</em></h1>
+<p>Approve or reject submitted service hours and see every councillor's totals.</p>
+</div></section>
+
+<section class="block light"><div class="container">
+
+<div class="auth-error" id="auth-error" role="alert"></div>
+
+<div class="admin-gate" id="admin-gate">
+<p class="lede" id="gate-msg">Checking access&hellip;</p>
+<button type="button" class="btn btn-primary" id="gate-signin" style="display:none;">Sign in with Google</button>
+</div>
+
+<div id="admin-content" style="display:none;">
+<div class="admin-bar">
+<p id="admin-who"></p>
+<div><a href="log-hours.html" class="btn btn-outline" style="margin-right:8px;">My hours</a><button type="button" class="btn btn-outline" id="admin-signout">Sign out</button></div>
+</div>
+<div class="admin-tabs">
+<button type="button" class="admin-tab active" data-tab="review">Pending review <span class="count" id="pending-count">0</span></button>
+<button type="button" class="admin-tab" data-tab="students">Councillors</button>
+</div>
+<div class="admin-panel active" id="panel-review"><div id="review-list"></div></div>
+<div class="admin-panel" id="panel-students">
+<table class="roster">
+<thead><tr><th>Name</th><th class="hide-sm">School</th><th class="hide-sm">Committee</th><th class="hide-sm">Email</th><th>Approved</th><th>Pending</th></tr></thead>
+<tbody id="roster-body"></tbody>
+</table>
+</div>
+</div>
+
+</div></section>
+</main>
+
+<footer class="site-footer"><div class="container">
+<div class="footer-grid">
+<div class="footer-brand">
+<a href="index.html" class="logo"><span class="logo-mark">J</span><span class="logo-text">Johannesburg Junior Council<small>EST. 1926 / CENTENARY 2026</small></span></a>
+<p>Eighty Grade 11 councillors, nominated by schools across Greater Johannesburg, running projects for the city since 1926.</p>
+</div>
+<div><h4>Council</h4><ul><li><a href="about.html">Story</a></li><li><a href="committees.html">Committees</a></li><li><a href="schools.html">Schools</a></li><li><a href="log-hours.html">Log hours</a></li></ul></div>
+<div><h4>Centenary</h4><ul><li><a href="centenary.html">Centenary 2026</a></li><li><a href="events.html">Events</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+<div><h4>Contact</h4><p style="font-size: 0.92rem; margin-bottom: 10px;">Avrille Gork, Chairperson<br><a href="mailto:avrille@edutoycentre.com">avrille@edutoycentre.com</a></p><p style="font-size: 0.82rem; opacity: 0.7;">Johannesburg, Gauteng, South Africa<br>NPO 052/457 &middot; Reg 2010/010543/08</p></div>
+</div>
+<div class="footer-bottom"><span>&copy; <span data-year>2026</span> Johannesburg Junior Council</span><span class="sa-flag-footer">&#127487;&#127462; Proudly South African</span></div>
+</div></footer>
+
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="events.js"></script>
+<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend/supabase-client.js"></script>
+<script src="backend/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Log service hours and track your record. For JJC councillors.">
+<meta name="theme-color" content="#0A1F44">
+<title>Log hours - Johannesburg Junior Council</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+.hours-dash{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.hours-stat{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:24px}
+.hours-stat .label{font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px;display:block}
+.hours-stat .num{font-family:'Fraunces',serif;font-style:italic;font-variation-settings:"SOFT" 100,"WONK" 1;font-weight:500;font-size:2.6rem;color:var(--gold-deep);line-height:1;letter-spacing:-0.03em}
+.hours-stat .num small{font-size:0.55em;color:var(--ink-mute);font-style:normal;margin-left:2px}
+.hours-stat.featured{background:linear-gradient(135deg,var(--navy),var(--navy-deep));border-color:var(--navy)}
+.hours-stat.featured .label{color:var(--on-dark-mute)}
+.hours-stat.featured .num{color:var(--gold)}
+.hours-entry{display:grid;grid-template-columns:110px 1fr 90px;gap:18px;align-items:baseline;padding:18px 0;border-bottom:1px solid var(--rule)}
+.hours-entry:first-child{border-top:1px solid var(--rule)}
+.hours-entry-date{font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--gold-deep);letter-spacing:0.08em;font-weight:600}
+.hours-entry-row strong{font-family:'Fraunces',serif;font-style:italic;font-variation-settings:"SOFT" 100,"WONK" 1;font-size:1.1rem;color:var(--ink);margin-right:6px;font-weight:500}
+.hours-entry-meta{font-size:0.86rem;color:var(--ink-soft)}
+.hours-entry-reflection{color:var(--ink-mute);font-size:0.92rem;margin-top:6px;max-width:50em;font-style:italic}
+.hours-entry-status{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.14em;color:var(--gold-deep);text-transform:uppercase;text-align:right;font-weight:600}
+.hours-entry-status.approved{color:var(--ink-mute)}
+.hours-entry-status.rejected{color:#C0392B}
+.hours-entry-delete{background:none;border:0;color:var(--ink-mute);font-size:0.78rem;cursor:pointer;text-decoration:underline;padding:0;margin-top:6px}
+@media (max-width:720px){.hours-dash{grid-template-columns:1fr 1fr}.hours-entry{grid-template-columns:1fr;gap:6px}.hours-entry-date{order:-1}.hours-entry-status{text-align:left}}
+.empty-state{padding:60px 24px;text-align:center;color:var(--ink-mute);border:1px dashed var(--rule-strong);border-radius:var(--radius);font-size:0.94rem}
+.empty-state .empty-icon{font-family:'Fraunces',serif;font-style:italic;font-variation-settings:"SOFT" 100,"WONK" 1;font-size:2.4rem;color:var(--gold);display:block;margin-bottom:8px;line-height:1}
+.profile-edit-form{display:none;background:rgba(247,248,250,0.06);border:1px solid var(--rule-dark);border-radius:var(--radius);padding:24px;margin-top:16px}
+.profile-edit-form.visible{display:block}
+.pe-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.profile-edit-form .field label{font-family:'JetBrains Mono',monospace;font-size:0.66rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--on-dark-mute);margin-bottom:5px;display:block}
+.profile-edit-form .field input,.profile-edit-form .field select{width:100%;padding:11px 14px;border:1.5px solid var(--rule-dark-strong);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.92rem;color:var(--on-dark);background:rgba(247,248,250,0.06);-webkit-appearance:none;appearance:none}
+.profile-edit-form .field select option{color:var(--ink)}
+.profile-edit-form .field input:focus,.profile-edit-form .field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,196,48,0.15)}
+.pe-actions{display:flex;gap:10px}
+.pe-actions .btn{padding:12px 20px;font-size:0.88rem}
+.pe-actions .btn-outline{color:var(--on-dark-mute);border-color:var(--rule-dark-strong);flex:0 0 auto}
+@media (max-width:720px){.pe-grid{grid-template-columns:1fr}.pe-actions{flex-direction:column}.pe-actions .btn{width:100%;justify-content:center}.profile-edit-form{padding:18px}}
+.profile-card{background:linear-gradient(135deg,var(--navy),var(--navy-deep));color:var(--on-dark);border-radius:var(--radius-lg);padding:32px;display:flex;align-items:center;gap:24px;margin-bottom:16px;position:relative;overflow:hidden}
+.profile-card::before{content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;background:radial-gradient(circle,rgba(244,196,48,0.20),transparent 70%);pointer-events:none}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:var(--navy);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;font-size:1.4rem;flex-shrink:0;position:relative}
+.profile-info{position:relative;flex:1;min-width:0}
+.profile-info .p-name{font-family:'Fraunces',serif;font-weight:500;font-size:1.4rem;color:var(--on-dark);margin-bottom:4px}
+.profile-info .p-meta{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold)}
+.profile-edit{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;color:var(--on-dark-mute);text-transform:uppercase;font-weight:600;position:relative;background:transparent;border:1px solid rgba(247,248,250,0.2);padding:8px 16px;border-radius:999px;cursor:pointer}
+.profile-edit:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.profile-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.profile-signin{display:inline-flex;align-items:center;gap:9px}
+.profile-signout{background:transparent;border:1px solid var(--rule-dark-strong);color:var(--on-dark);border-radius:var(--radius-pill);padding:9px 18px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer}
+.profile-signout:hover{border-color:var(--gold);color:var(--gold)}
+.auth-note{font-size:0.9rem;color:var(--ink-mute);margin:0 0 40px;max-width:60em}
+.auth-error{display:none;background:#FBEAEA;border:1px solid #E5B4B4;color:#8A1F1F;border-radius:var(--radius);padding:14px 18px;font-size:0.9rem;margin:0 0 32px}
+.auth-error.visible{display:block}
+.form-note{font-size:0.86rem;color:var(--ink-mute);margin-top:14px}
+@media (max-width:720px){.profile-card{flex-wrap:wrap;padding:24px;gap:16px}.profile-info .p-name{font-size:1.2rem}.profile-actions{margin-left:0;width:100%}.profile-actions .btn,.profile-signin{flex:1;justify-content:center}}
+</style>
+</head>
+<body>
+<div class="scroll-progress" aria-hidden="true"></div>
+<header class="site-header solid"><div class="container"><nav class="nav" aria-label="Primary">
+<a href="index.html" class="logo"><span class="logo-mark">J</span><span class="logo-text">Johannesburg Junior Council<small>EST. 1926</small></span></a>
+<button class="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="site-menu"><span>Menu</span><span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+<ul class="nav-links" id="primary-menu">
+<li><a href="index.html">Home</a></li>
+<li><a href="about.html">Story</a></li>
+<li><a href="committees.html">Committees</a></li>
+<li><a href="schools.html">Schools</a></li>
+<li><a href="centenary.html">Centenary</a></li>
+<li><a href="events.html">Events</a></li>
+<li><a href="contact.html">Contact</a></li>
+<li><a href="log-hours.html" class="hours-counter active"><span>Log hours</span></a></li>
+</ul></nav></div></header>
+<div class="nav-overlay" id="site-menu" role="dialog" aria-modal="true" aria-label="Site menu">
+<p class="menu-label">Menu</p>
+<ul>
+<li><a href="index.html" class="menu-link">Home</a></li>
+<li><a href="about.html" class="menu-link">Story</a></li>
+<li><a href="committees.html" class="menu-link">Committees</a></li>
+<li><a href="schools.html" class="menu-link">Schools</a></li>
+<li><a href="centenary.html" class="menu-link">Centenary</a></li>
+<li><a href="events.html" class="menu-link">Events</a></li>
+<li><a href="contact.html" class="menu-link">Contact</a></li>
+<li><a href="log-hours.html" class="menu-link active">Log hours</a></li>
+</ul>
+<div class="menu-foot">
+<a href="log-hours.html" class="btn btn-primary">Log service hours <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+<div class="sa-ribbon" aria-hidden="true"></div>
+<p>Johannesburg Junior Council &middot; 1926&ndash;2026</p>
+</div>
+</div>
+
+<main>
+<section class="page-header"><div class="container">
+<span class="tag outline-light"><span class="dot"></span>For councillors</span>
+<h1>Service <em>hours.</em></h1>
+<p>Log what you did, send it for approval, and watch your record build through the year.</p>
+</div></section>
+
+<section class="block light"><div class="container">
+
+<div class="auth-error" id="auth-error" role="alert"></div>
+
+<div class="profile-card" data-aos="fade-up" id="profile-card">
+<div class="profile-avatar" id="profile-initials">?</div>
+<div class="profile-info">
+<div class="p-name" id="profile-name">Sign in to start logging</div>
+<div class="p-meta" id="profile-meta">Use your Google account</div>
+</div>
+<div class="profile-actions">
+<button type="button" class="btn btn-primary profile-signin" id="profile-signin">
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" d="M21.35 11.1H12v3.6h5.35c-.5 2.4-2.55 3.75-5.35 3.75a5.85 5.85 0 1 1 0-11.7c1.45 0 2.75.5 3.78 1.48l2.6-2.6A9.6 9.6 0 0 0 12 2.4 9.6 9.6 0 1 0 12 21.6c5.55 0 9.2-3.9 9.2-9.4 0-.6-.05-1.1-.15-1.6z"/></svg>
+Sign in with Google</button>
+<button type="button" class="profile-edit" id="profile-edit" style="display:none;">Edit profile</button>
+<a href="admin.html" class="profile-edit" id="profile-admin" style="display:none;text-decoration:none;">Admin dashboard</a>
+<button type="button" class="profile-signout" id="profile-signout" style="display:none;">Sign out</button>
+</div>
+</div>
+
+<div class="profile-edit-form" id="profile-edit-form">
+<form id="profile-form-inner">
+<div class="pe-grid">
+<div class="field"><label for="pe-name">Full name</label><input type="text" id="pe-name" name="pe-name" placeholder="First and last" required></div>
+<div class="field"><label for="pe-school">School</label><select id="pe-school" name="pe-school">
+<option value="">Choose your school</option>
+<option>Assumption Convent</option>
+<option>Crawford Bedfordview</option>
+<option>Crawford Lonehill</option>
+<option>Crawford Sandton</option>
+<option>De La Salle Holy Cross</option>
+<option>Eden College</option>
+<option>Edenglen High School</option>
+<option>Glenvista High</option>
+<option>Grace Trinity</option>
+<option>Grantley School</option>
+<option>Heronbridge College</option>
+<option>Holy Family College</option>
+<option>Holy Rosary Girls</option>
+<option>King David Linksfield</option>
+<option>King David Victory Park</option>
+<option>King Edward VII</option>
+<option>Kingsmead College</option>
+<option>Marist Brothers Linmeyer</option>
+<option>Maryvale College</option>
+<option>McAuley House</option>
+<option>Northcliff High</option>
+<option>Our Lady of Lebanon</option>
+<option>Parktown Boys</option>
+<option>Parktown Girls</option>
+<option>Pinnacle College</option>
+<option>Reddam Helderfontein</option>
+<option>Reddam House</option>
+<option>Reddam Waterfall</option>
+<option>Redhill High</option>
+<option>Roedean School</option>
+<option>St Andrew's College</option>
+<option>St Benedict's College</option>
+<option>St David's College</option>
+<option>St David's Inanda</option>
+<option>St John's College</option>
+<option>St Peter's College</option>
+<option>St Stithian's College</option>
+<option>St Teresa's School</option>
+<option>The King's School</option>
+<option>Waterstone College</option>
+<option>Yeshiva College</option>
+<option>Other</option>
+</select></div>
+<div class="field"><label for="pe-committee">Committee</label><select id="pe-committee" name="pe-committee">
+<option value="">Choose committee</option>
+<option>Well-Being</option>
+<option>Arts &amp; Culture</option>
+<option>Sports &amp; Recreation</option>
+<option>Environmental</option>
+<option>Outreach</option>
+</select></div>
+</div>
+<div class="pe-actions">
+<button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">Save profile</button>
+<button type="button" class="btn btn-outline" id="profile-cancel">Cancel</button>
+</div>
+</form>
+</div>
+
+<p class="auth-note" id="auth-note">First time here? Sign in with Google and your profile is created automatically. Add your school and committee under Edit profile so your committee lead knows who you are.</p>
+
+<div class="section-intro" data-aos="fade-up">
+<span class="tag"><span class="dot"></span>Your record</span>
+<h2 style="margin-top: 20px;">At a <em>glance.</em></h2>
+</div>
+
+<div class="hours-dash">
+<div class="hours-stat featured" data-aos="fade-up"><span class="label">Approved</span><span class="num"><span id="summary-total">0</span><small>h</small></span></div>
+<div class="hours-stat" data-aos="fade-up" data-aos-delay="80"><span class="label">Pending review</span><span class="num"><span id="summary-pending">0</span><small>h</small></span></div>
+<div class="hours-stat" data-aos="fade-up" data-aos-delay="160"><span class="label">Entries</span><span class="num"><span id="summary-entries">0</span></span></div>
+</div>
+</div></section>
+
+<section class="block white"><div class="container">
+<div class="section-intro" data-aos="fade-up">
+<span class="tag"><span class="dot"></span>Log new entry</span>
+<h2 style="margin-top: 22px;">Add to your <em>record.</em></h2>
+<p>Entries go to an admin for approval. Once approved, they count towards your total.</p>
+</div>
+
+<div class="form-card" style="max-width: 760px; margin: 0 auto;" data-aos="fade-up">
+<form id="hours-form">
+<div class="form-grid">
+<div class="field"><label for="hf-date">Date</label><input type="date" id="hf-date" name="date" required></div>
+<div class="field"><label for="hf-hours">Hours</label><input type="number" id="hf-hours" name="hours" min="0.25" max="24" step="0.25" placeholder="e.g. 2.5" required></div>
+<div class="field"><label for="hf-committee">Committee</label><select id="hf-committee" name="committee" required>
+<option value="">Choose committee</option>
+<option>Well-Being</option>
+<option>Arts &amp; Culture</option>
+<option>Sports &amp; Recreation</option>
+<option>Environmental</option>
+<option>Outreach</option>
+</select></div>
+<div class="field"><label for="hf-activity">Activity</label><select id="hf-activity" name="activity" required>
+<option value="">Choose activity</option>
+<option>Committee meeting</option>
+<option>Event planning</option>
+<option>Event delivery</option>
+<option>Outreach visit</option>
+<option>Training or workshop</option>
+<option>Other</option>
+</select></div>
+<div class="field full"><label for="hf-reflection">Reflection (optional)</label><textarea id="hf-reflection" name="reflection" placeholder="One sentence on what you did." maxlength="500"></textarea><span class="field-hint">Helps the admin approve faster.</span></div>
+</div>
+<button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">Submit for approval <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+<div class="form-success" role="status">Submitted. An admin will review it.</div>
+<div class="form-error" role="alert" id="hours-error"></div>
+</form>
+</div>
+</div></section>
+
+<section class="block light"><div class="container">
+<div class="section-intro" data-aos="fade-up">
+<span class="tag"><span class="dot"></span>Recent entries</span>
+<h2 style="margin-top: 22px;">Your <em>activity.</em></h2>
+<p>Pending entries can be deleted until they are reviewed.</p>
+</div>
+<div style="max-width: 920px;"><div id="hours-entries"></div></div>
+</div></section>
+</main>
+
+<footer class="site-footer"><div class="container">
+<div class="footer-grid">
+<div class="footer-brand">
+<a href="index.html" class="logo"><span class="logo-mark">J</span><span class="logo-text">Johannesburg Junior Council<small>EST. 1926 / CENTENARY 2026</small></span></a>
+<p>Eighty Grade 11 councillors, nominated by schools across Greater Johannesburg, running projects for the city since 1926.</p>
+</div>
+<div><h4>Council</h4><ul><li><a href="about.html">Story</a></li><li><a href="committees.html">Committees</a></li><li><a href="schools.html">Schools</a></li><li><a href="log-hours.html">Log hours</a></li></ul></div>
+<div><h4>Centenary</h4><ul><li><a href="centenary.html">Centenary 2026</a></li><li><a href="events.html">Events</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+<div><h4>Contact</h4><p style="font-size: 0.92rem; margin-bottom: 10px;">Avrille Gork, Chairperson<br><a href="mailto:avrille@edutoycentre.com">avrille@edutoycentre.com</a></p><p style="font-size: 0.82rem; opacity: 0.7;">Johannesburg, Gauteng, South Africa<br>NPO 052/457 &middot; Reg 2010/010543/08</p></div>
+</div>
+<div class="footer-bottom"><span>&copy; <span data-year>2026</span> Johannesburg Junior Council</span><span class="sa-flag-footer">&#127487;&#127462; Proudly South African</span></div>
+</div></footer>
+
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="events.js"></script>
+<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend/supabase-client.js"></script>
+<script src="backend/log-hours.js"></script>
+</body>
+</html>
